@@ -53,10 +53,10 @@ Instead of Gatling, you can use a Reactor Netty Http2 client: just run the front
 run this program:
 
 ```
-java -Dscenario=get|post-Dbackend.host=BACKEND_IP -Dsteal=true|false -cp frontend/build/libs/^Contend-1.0.0.jar org.example.ClientApp
+java -Dscenario=SCENARIO -Dbackend.host=BACKEND_IP -Dsteal=true|false -cp frontend/build/libs/^Contend-1.0.0.jar org.example.ClientApp
 ```
 
-The following scenarios are supported: get or post. Use -Dscenario=get, or -Dscenario=post
+The following scenarios are supported: get or post. Use `-Dscenario=get`, or `-Dscenario=post`
 
 ## Current benchmarks results (on GCP, using java21, with 16 core machines):
 
@@ -76,10 +76,11 @@ The following scenarios are supported: get or post. Use -Dscenario=get, or -Dsce
 - in normal mode (no work stealing), the frontend takes around 1,5 / 2 cores (it's because all http2 pool connections are managed by the same event loop.
 Initializing the frontend with a hack like the following just after the frontend is started allows to make sure all http2 polls connections are managed by different event loops:
 (replace `N` by the number of cores of the machine where the frontend is running, if 10 CPUS: use -c10)
-In this case, performances are better (**todo**: benchmarks in this mode, to see the differences)
+In this case, performances are better (**todo**: do benchmarks in this mode, to see the differences)
 ```
-h2load -cN -m100 -n 100 https://127.0.0.1:8091/post
+h2load -c16 -m100 -n 100 https://127.0.0.1:8091/post
 ```
+(adjust **-c16** option with the number of available CPUs where the frontend is running)
 
 - with work stealing, the frontend takes around 90% of the cpus.
 
@@ -186,7 +187,7 @@ io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1
         at java.base/java.lang.Thread.run(Thread.java:1583)
 ```
 
-- with work steal mode, for the Gatling/Post2 scenarion, we can see this exception in the forntend:
+- with work steal mode, for the Gatling/Post2 scenarion, we can see this exception in the frontend:
 ```
 io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1
         at io.netty.util.internal.ReferenceCountUpdater.toLiveRealRefCnt(ReferenceCountUpdater.java:83)
@@ -286,10 +287,10 @@ io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1
 
 ## known issues:
 
-wWen using too much concurrent streams (like 100), sometimes with workstealing enabled, for the Post2 scenario 
+Wen using too much concurrent streams (like 100), sometimes with workstealing enabled, for the **Post2** scenario 
 we can get the following exceptions in the backend when using work stealing:
-Work Around: run Gatling with -Dh2.concurrency=50
-
+Work Around: run Gatling with **-Dh2.concurrency=50**
+(On GCP, using h2.concurrency=100 works, but not on localhost, or on slow networks. By default, the h2.concurrency is set to 50).
 
 ```
 14:57:52.480 [reactor-http-nio-10] WARN  i.n.channel.DefaultChannelPipeline - An exceptionCaught() event was fired, and it reached at the tail of the pipeline. It usually means the last handler in the pipeline did not handle the exception.
