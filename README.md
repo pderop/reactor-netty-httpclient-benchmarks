@@ -2,7 +2,7 @@
 
 Gatling benchmarks for Reactor Netty Http Client
 
-# Prerequisites:
+## Prerequisites:
 You need to first build the following projects and publish them to local M2 before building this project:
 
 ```
@@ -15,7 +15,7 @@ cd reactor-netty
 ./gradlew publishToMavenLocal
 ```
 
-# Build
+## Build
 
 Use java21:
 
@@ -23,7 +23,7 @@ Use java21:
 
 ./gradlew build
 
-# Run the benchmarks with Gatling
+## Run the benchmarks with Gatling
 
 The samples are made up of three jars (ideally to be installed on three different machines):
 
@@ -47,7 +47,7 @@ On machine C, start gatling (will by default connect to the frontend on port 809
 java -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test-name Get Post
 ```
 
-# Run the benchmarks with Reactor Netty Http Client
+## Run the benchmarks with Reactor Netty Http Client
 
 Instead of Gatling, you can use a Reactor Netty Http2 client: just run the frontend/backend as before, and instead of gatling,
 run this program:
@@ -58,9 +58,10 @@ java -Dscenario=SCENARIO -Dbackend.host=BACKEND_IP -Dsteal=true|false -cp fronte
 
 The following scenarios are supported: get or post. Use `-Dscenario=get`, or `-Dscenario=post`
 
-## Current benchmarks results (on GCP, using java21, with 16 core machines):
+## Current benchmarks results
 
 ### 11/24/2023:
+(on GCP, using java21, with 16 core machines):
 
 |                     | No Work Stealing (reqs/sec) | Work Stealing (reqs/sec) |
 |---------------------|-----------------------------|--------------------------|
@@ -290,7 +291,7 @@ io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1
         at java.base/java.lang.Thread.run(Thread.java:1583)
 </details>
 
-## known issues:
+## known issues
 
 Wen using too much concurrent streams (like 100), sometimes with workstealing enabled, for the **Post2** scenario 
 we can get the following exceptions in the backend when using work stealing:
