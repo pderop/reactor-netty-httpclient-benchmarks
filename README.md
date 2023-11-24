@@ -85,7 +85,9 @@ h2load -c16 -m100 -n 100 https://127.0.0.1:8091/post
 - with work stealing, the frontend takes around 90% of the cpus.
 
 - with normal (no work steal mode), for the Gatling/Post test, we can observe this exception in the frontend:
-```
+
+<details>
+  <summary>IllegalReferenceCountException: refCnt: 0, increment: 1</summary>
 13:05:10.177 [reactor-http-epoll-3] WARN  r.n.http.client.HttpClientConnect - [726d00f4/154549-1, L:/10.128.15.214:35380 - R:10.128.15.218/10.128.15.218:8080] The connection observed an error
 io.netty.util.IllegalReferenceCountException: refCnt: 0, increment: 1
         at io.netty.util.internal.ReferenceCountUpdater.retain0(ReferenceCountUpdater.java:133)
@@ -143,10 +145,11 @@ io.netty.util.IllegalReferenceCountException: refCnt: 0, increment: 1
         at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
         at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
         at java.base/java.lang.Thread.run(Thread.java:1583)
-```
+</details>
 
 - with work steal mode, we can see this exception sometimes in the frontend:
-```
+<details>
+  <summary>reactor.core.publisher.Operators - Error while discarding element from a Collection, continuing with next element</summary>
 13:15:46.093 [reactor-http-epoll-11] WARN  reactor.core.publisher.Operators - Error while discarding element from a Collection, continuing with next element
 io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1
         at io.netty.util.internal.ReferenceCountUpdater.toLiveRealRefCnt(ReferenceCountUpdater.java:83)
@@ -185,10 +188,12 @@ io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1
         at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
         at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
         at java.base/java.lang.Thread.run(Thread.java:1583)
-```
+</details>
+
 
 - with work steal mode, for the Gatling/Post2 scenarion, we can see this exception in the frontend:
-```
+<details>
+  <summary>io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1</summary>
 io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1
         at io.netty.util.internal.ReferenceCountUpdater.toLiveRealRefCnt(ReferenceCountUpdater.java:83)
         at io.netty.util.internal.ReferenceCountUpdater.release(ReferenceCountUpdater.java:148)
@@ -283,7 +288,7 @@ io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1
         at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
         at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
         at java.base/java.lang.Thread.run(Thread.java:1583)
-```
+</details>
 
 ## known issues:
 
@@ -292,7 +297,8 @@ we can get the following exceptions in the backend when using work stealing:
 Work Around: run Gatling with **-Dh2.concurrency=50**
 (On GCP, using h2.concurrency=100 works, but not on localhost, or on slow networks. By default, the h2.concurrency is set to 50).
 
-```
+<details>
+  <summary>io.netty.handler.codec.http2.Http2Exception: Stream 774273 does not exist for inbound frame RST_STREAM, endOfStream = false</summary>
 14:57:52.480 [reactor-http-nio-10] WARN  i.n.channel.DefaultChannelPipeline - An exceptionCaught() event was fired, and it reached at the tail of the pipeline. It usually means the last handler in the pipeline did not handle the exception.
 io.netty.handler.codec.http2.Http2Exception: Stream 774273 does not exist for inbound frame RST_STREAM, endOfStream = false
 	at io.netty.handler.codec.http2.Http2Exception.connectionError(Http2Exception.java:109)
@@ -338,9 +344,12 @@ io.netty.handler.codec.http2.Http2Exception: Stream 774273 does not exist for in
 	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
 	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
 	at java.base/java.lang.Thread.run(Thread.java:1583)
-```
+</details>
+
 and this exception in the frontend:
-```
+
+<details>
+  <summary>reactor.core.publisher.Operators - Error while discarding element from a Collection, continuing with next element</summary>
 14:59:19.444 [reactor-http-nio-2] WARN  reactor.core.publisher.Operators - Error while discarding element from a Collection, continuing with next element
 io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1
 	at io.netty.util.internal.ReferenceCountUpdater.toLiveRealRefCnt(ReferenceCountUpdater.java:83)
@@ -377,4 +386,5 @@ io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1
 	at java.base/java.lang.Thread.run(Thread.java:1583)
 14:59:19.444 [reactor-http-nio-2] ERROR r.n.http.server.HttpServerOperations - [5a85beff/172421-1, L:/127.0.0.1:8090 - R:/127.0.0.1:58523] Error starting response. Replying error status
 reactor.netty.http.client.PrematureCloseException: Connection prematurely closed DURING response
-```
+</details>
+
