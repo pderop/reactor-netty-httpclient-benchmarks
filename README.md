@@ -293,10 +293,11 @@ io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1
 
 ## known issues
 
-Wen using too much concurrent streams (like 100), sometimes with workstealing enabled, for the **Post2** scenario 
+Wen using too much concurrent streams in Gatling (like 100), sometimes with workstealing enabled, for the **Post2** scenario 
 we can get the following exceptions in the backend when using work stealing:
 Work Around: run Gatling with **-Dh2.concurrency=50**
-(On GCP, using h2.concurrency=100 works, but not on localhost, or on slow networks. By default, the h2.concurrency is set to 50).
+On GCP, using h2.concurrency=100 works. 
+By default, the h2.concurrency is set to 50 in Gatling.
 
 <details>
   <summary>io.netty.handler.codec.http2.Http2Exception: Stream 774273 does not exist for inbound frame RST_STREAM, endOfStream = false</summary>
