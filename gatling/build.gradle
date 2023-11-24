@@ -1,0 +1,50 @@
+plugins {
+    id "io.gatling.gradle" version "3.9.5.1"
+}
+
+group 'com.example'
+version '1.0.0'
+
+ext {
+    reflectionsVersion = "0.9.12"
+//    boringSslVersion = "2.0.59.Final"
+//    nettyVersion = "4.1.90.Final"
+}
+
+dependencies {
+    gatling "org.reflections:reflections:${reflectionsVersion}"
+}
+
+configurations {
+    fatJarDependencies.extendsFrom gatling
+}
+
+// https://medium.com/@suman.maity112/run-gatling-scenarios-as-executable-jar-bfe32c3d9af5
+task fatJar(type: Jar, dependsOn: ['gatlingClasses', 'processResources']) {
+    group = "build"
+    manifest {
+        attributes 'Implementation-Title': project.name,
+                'Implementation-Version': project.version,
+                'Main-Class': 'application.Application'
+    }
+
+    exclude 'META-INF/MANIFEST.MF'
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    archiveClassifier = "all"
+
+    from files(sourceSets.main.output.classesDirs)
+    from files(sourceSets.gatling.output)
+    from {
+        configurations['fatJarDependencies']
+                .collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
+}
+
+tasks.named("jar") { finalizedBy("fatJar") }
+

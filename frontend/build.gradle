@@ -1,0 +1,19 @@
+plugins {
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+apply plugin: 'application'
+mainClassName = 'org.example.FrontendApp'
+group 'com.example'
+version '1.0.0'
+
+shadowJar {
+    archiveFileName = "${project.name}-${project.version}.jar"
+    // Merge service provider files
+    mergeServiceFiles()
+}
+
+project.tasks.distTar.dependsOn(shadowJar)
+project.tasks.distZip.dependsOn(shadowJar)
+project.tasks.startScripts.dependsOn(shadowJar)
+project.tasks.startShadowScripts.dependsOn(':frontend:jar')
