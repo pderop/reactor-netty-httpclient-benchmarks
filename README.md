@@ -65,26 +65,19 @@ The following scenarios are supported: get or post. Use `-Dscenario=get`, or `-D
 
 |                     | No Work Stealing (reqs/sec) | Work Stealing (reqs/sec) |
 |---------------------|-----------------------------|--------------------------|
-| **Gatling/Get**     | 32144.108                   | 110850.942               |
-| **Gatling/Post**    | 20600.158                   | 65038.125                |
-| **Gatling/Post2**   | 11128.558                   | 55879.25                 |
-| **HttpClient/get**  | 110574                      | 142130                   |
-| **HttpClient/post** | 98132                       | 137516                   |
+| **Gatling/Get**     | 164536.942                  | 181588.642               |
+| **Gatling/Post**    | 104464.492                  | 105178.083                |
+| **Gatling/Post2**   | 63620.333                   | 76132.233                 |
+| **HttpClient/get**  | 112526                      | 155430                   |
+| **HttpClient/post** | 120493                       | 154242                   |
 
 
 #### notes: 
 
-- in normal mode (no work stealing), the frontend takes around 1,5 / 2 cores (it's because all http2 pool connections are managed by the same event loop.
-Initializing the frontend with a hack like the following just after the frontend is started allows to make sure all http2 polls connections are managed by different event loops:
-(replace `N` by the number of cores of the machine where the frontend is running, if 10 CPUS: use -c10)
-In this case, performances are better (**todo**: do benchmarks in this mode, to see the differences)
+- in normal mode, the HttpClient is configured like this in order to avoid colocation (else the frontend remains mono-eventloo):
 ```
-h2load -c16 -m100 -n 100 https://127.0.0.1:8091/post
+   client = client.runOn(LoopResources.create("client-loops", 1, Runtime.getRuntime().availableProcessors(), true, false));
 ```
-(adjust **-c16** option with the number of available CPUs where the frontend is running)
-
-- with work stealing, the frontend takes around 90% of the cpus.
-
 - with normal (no work steal mode), for the Gatling/Post test, we can observe this exception in the frontend:
 
 <details>
@@ -296,8 +289,7 @@ io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1
 Wen using too much concurrent streams in Gatling (like 100), sometimes with workstealing enabled, for the **Post2** scenario 
 we can get the following exceptions in the backend when using work stealing:
 Work Around: run Gatling with **-Dh2.concurrency=50**
-On GCP, using h2.concurrency=100 works. 
-By default, the h2.concurrency is set to 50 in Gatling.
+By default, the h2.concurrency is set to 100 in Gatling.
 
 <details>
   <summary>io.netty.handler.codec.http2.Http2Exception: Stream 774273 does not exist for inbound frame RST_STREAM, endOfStream = false</summary>

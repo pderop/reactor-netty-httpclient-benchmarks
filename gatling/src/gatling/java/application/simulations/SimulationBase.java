@@ -19,7 +19,7 @@ public abstract class SimulationBase extends Simulation {
     public static final int STEPS = Integer.getInteger("steps", 10);
     public static final Duration LEVEL_LASTING = parseDuration(System.getProperty("level.lasting", "10"));
     public static final Duration RAMP_LASTING = parseDuration(System.getProperty("ramp.lasting", "1"));
-    public static final int H2_CONCURRENCY = Integer.getInteger("h2.concurrency", 50);
+    public static final int H2_CONCURRENCY = Integer.getInteger("h2.concurrency", 100);
 
     protected void setUp(HttpProtocolBuilder httpProtocolBuilder, HttpRequestActionBuilder requestBuilder, String scnName) {
         ScenarioBuilder scn = scenario(scnName)
