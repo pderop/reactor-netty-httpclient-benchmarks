@@ -77,11 +77,20 @@ java -Dsteal=true -Dbackend.host=BACKEND_IP -Dscenario=post -cp frontend-1.0.0.j
 |                     | No Work Stealing (reqs/sec) | Work Stealing (reqs/sec) |
 |---------------------|-----------------------------|--------------------------|
 | **Gatling/Get**     | 164536.942                  | 181588.642               |
-| **Gatling/Post**    | 104464.492                  | 105178.083                |
-| **Gatling/Post2**   | 61201.783                   | 76132.233                 |
+| **Gatling/Post**    | 104464.492                  | 105178.083               |
+| **Gatling/Post2**   | 61201.783                   | 76132.233                |
 | **HttpClient/get**  | 112526                      | 155430                   |
-| **HttpClient/post** | 120493                       | 154242                   |
+| **HttpClient/post** | 120493                      | 154242                   |
 
+(on private home network, using java21, between two Macs M1):
+
+|                     | No Work Stealing (reqs/sec) | Work Stealing (reqs/sec) |
+|---------------------|-----------------------------|--------------------------|
+| **Gatling/Get**     |     105964.367              | 126893.75                |
+| **Gatling/Post**    |     71890.667               | 78402.8                  |
+| **Gatling/Post2**   |                             |                          |
+| **HttpClient/get**  |                             |                          |
+| **HttpClient/post** |                             |                          |
 
 #### notes: 
 
