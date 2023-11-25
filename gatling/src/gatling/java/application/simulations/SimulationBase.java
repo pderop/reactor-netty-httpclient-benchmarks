@@ -16,8 +16,8 @@ public abstract class SimulationBase extends Simulation {
     public static final int FRONTEND_PORT = Integer.parseInt(System.getProperty("frontend.port", "8090"));
     public static final Duration DURATION = parseDuration(System.getProperty("duration", "2m"));
     public static final int INCREMENT = Integer.getInteger("increment", 1);
-    public static final int STEPS = Integer.getInteger("steps", 10);
-    public static final Duration LEVEL_LASTING = parseDuration(System.getProperty("level.lasting", "10"));
+    public static final int STEPS = Integer.getInteger("steps", Runtime.getRuntime().availableProcessors());
+    public static final Duration LEVEL_LASTING = parseDuration(System.getProperty("level.lasting", "2"));
     public static final Duration RAMP_LASTING = parseDuration(System.getProperty("ramp.lasting", "1"));
     public static final int H2_CONCURRENCY = Integer.getInteger("h2.concurrency", 100);
 
