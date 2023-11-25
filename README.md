@@ -109,7 +109,7 @@ For the "Post2" scenario, reduce the number of connections if exceptions are obs
 
 |                          | Default mode (reqs/sec) | Colocation disabled (reqs/sec) | Steal (reqs/sec) |
 |--------------------------|-------------------------|--------------------------------|---------------|
-| **Gatling/Get/5 cnx**    | 45757.933               | 4660043                        | 6248792       |
+| **Gatling/Get/5 cnx**    | 45757.933               | 77667.383                      | 104146.533    |
 | **Gatling/Get/10 cnx**   | 45202.683               | 92010.433                      | 123405.867    |
 | **Gatling/Get/100 cnx**  | 45597.033               | 99688.733                      | 128446.017    |
 | **Gatling/Post 5 cnx**   | 32880.867               | 60109.85                       | 70396.7       |
@@ -125,6 +125,12 @@ For the "Post2" scenario, reduce the number of connections if exceptions are obs
 
 - for the Post2 scenario, the max connections must not be too high, else many exceptions
 are throwns and the frontend looses it's backend connections. See below the #issue 1.
+using -Dsteps=7 seems fine, maybe you'll need to reduce it.
+
+- both HttpClient/get, and HttpClient/post tests are getting the same kind of results whether default is used, or if
+colocation is disabled. It's because the HttpClient is used from the main() thread, not from a reactor netty event loop,
+so there is no colocation in this case ...
+
 
 ## known issues
 
