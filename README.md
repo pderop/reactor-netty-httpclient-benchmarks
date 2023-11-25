@@ -102,8 +102,8 @@ java -Dsteal=true -Dbackend.host=BACKEND_IP -Dscenario=post -cp frontend-1.0.0.j
 ## known issues
 
 ##### issue 1
-Wen using too much concurrent streams in Gatling (like 100), sometimes with workstealing enabled, for the **Post2** scenario 
-we can get the following exceptions in the backend:
+Wen using too much concurrent streams in Gatling (like 100), for the **Post2** scenario 
+we can get the following exceptions in the backend (in all modes):
 
 <details>
   <summary>io.netty.handler.codec.http2.Http2Exception: Stream 774273 does not exist for inbound frame RST_STREAM, endOfStream = false</summary>
@@ -194,6 +194,34 @@ io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1
 	at java.base/java.lang.Thread.run(Thread.java:1583)
 14:59:19.444 [reactor-http-nio-2] ERROR r.n.http.server.HttpServerOperations - [5a85beff/172421-1, L:/127.0.0.1:8090 - R:/127.0.0.1:58523] Error starting response. Replying error status
 reactor.netty.http.client.PrematureCloseException: Connection prematurely closed DURING response
+
+io.netty.channel.ChannelPipelineException: io.netty.handler.codec.http2.Http2FrameCodec.handlerRemoved() has thrown an exception.
+at io.netty.channel.DefaultChannelPipeline.callHandlerRemoved0(DefaultChannelPipeline.java:640)
+at io.netty.channel.DefaultChannelPipeline.destroyDown(DefaultChannelPipeline.java:876)
+at io.netty.channel.DefaultChannelPipeline.destroyUp(DefaultChannelPipeline.java:844)
+at io.netty.channel.DefaultChannelPipeline.destroy(DefaultChannelPipeline.java:836)
+at io.netty.channel.DefaultChannelPipeline.access$700(DefaultChannelPipeline.java:46)
+at io.netty.channel.DefaultChannelPipeline$HeadContext.channelUnregistered(DefaultChannelPipeline.java:1392)
+at io.netty.channel.AbstractChannelHandlerContext.invokeChannelUnregistered(AbstractChannelHandlerContext.java:215)
+at io.netty.channel.AbstractChannelHandlerContext.invokeChannelUnregistered(AbstractChannelHandlerContext.java:195)
+at io.netty.channel.DefaultChannelPipeline.fireChannelUnregistered(DefaultChannelPipeline.java:821)
+at io.netty.channel.AbstractChannel$AbstractUnsafe$7.run(AbstractChannel.java:821)
+at io.netty.util.concurrent.AbstractEventExecutor.runTask(AbstractEventExecutor.java:173)
+at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:166)
+at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:470)
+at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:566)
+at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:997)
+at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: io.netty.util.IllegalReferenceCountException: refCnt: 0, decrement: 1
+at io.netty.util.internal.ReferenceCountUpdater.toLiveRealRefCnt(ReferenceCountUpdater.java:83)
+at io.netty.util.internal.ReferenceCountUpdater.release(ReferenceCountUpdater.java:148)
+at io.netty.buffer.AbstractReferenceCountedByteBuf.release(AbstractReferenceCountedByteBuf.java:101)
+at io.netty.handler.codec.ByteToMessageDecoder.handlerRemoved(ByteToMessageDecoder.java:269)
+at io.netty.channel.AbstractChannelHandlerContext.callHandlerRemoved(AbstractChannelHandlerContext.java:1122)
+at io.netty.channel.DefaultChannelPipeline.callHandlerRemoved0(DefaultChannelPipeline.java:637)
+
 </details>
 
 Work Around: run Gatling with **-Dh2.concurrency=50**. By default, the h2.concurrency is set to 100 in Gatling.
