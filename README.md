@@ -31,7 +31,7 @@ Gatling -> frontend -> backend
 
 In Gatling, there are three scenarios: "Get", "Post", and "Post2"
 - Get: a small HTTP/2 GET request is sent to the frontend, which forwards it to the backend
-- Post: same as HTTP/2 Get, but with POST with a 1k json payload in both request and response
+- Post: same as above, but with POST with a 1k json payload in both request and response
 - Post2: a more complex scenario (the json payload is parsed by the frontend):
 
 ```mermaid
@@ -48,7 +48,7 @@ sequenceDiagram
     Frontend-->>Gating: 200 OK (json 1K)
 ```
 
-In addition to Gatling, there is a also a loader based on reactor netty HttpClient, with two supported scenarions: "get" and "post".
+In addition to Gatling, there is a also a loader based on reactor netty HttpClient, with two supported scenarios: "get" and "post".
 
 The benchmarks can be run in three mode:
 
@@ -57,9 +57,9 @@ The benchmarks can be run in three mode:
 ```
     client = client.runOn(LoopResources.create("client-loops", 1, Runtime.getRuntime().availableProcessors(), true, false));
 ```
-- work stealing mode: the frontend Http2Client uses the experimental new work stealing reactor pool, where streams acquisition 
-are handled by concurrent pools, each one being executed within their own event loop executor
-(there is one actual Http2Pool per HttpClient event loop) 
+- work stealing mode: the frontend Http2Client uses an experimental (work in progress) work stealing reactor pool, where streams acquisition 
+are handled by concurrent pools, each one being executed within its own event loop executor.
+(there is one actual Http2Pool dedicated to each HttpClient event loop). 
 
 ## Start the servers
 
@@ -93,7 +93,7 @@ java -Dsteps=10 -Dfrontend.host=FRONTEND_HOST -Dfrontend.port=FRONTEND_PORT-jar 
 `-Dsteps` is used to configure the number of connections to establish. Do not use too much connections, it's HTTP/2 ! 
 For the **Post2** scenario, there is an issue, and you must not use more than 5 connections (reduce it if you see any failures):
 ```
-java -Dsteps=5 -Dfrontend.host=FRONTEND_HOST -Dfrontend.port=FRONTEND_PORT -jar gatling/build/libs/gatling-1.0.0-all.jar test-report-name Get Post2
+java -Dsteps=5 -Dfrontend.host=FRONTEND_HOST -Dfrontend.port=FRONTEND_PORT -jar gatling/build/libs/gatling-1.0.0-all.jar test-report-name Post2
 ```
 
 ## Or start h2load
@@ -110,7 +110,7 @@ on macos:
 brew install nghttp2
 ```
 
-now, run the scenario with the run-h2load.sh script (the current working directory must be to toplevel project (where this README is located):
+now, run the scenario with the run-h2load.sh script (the current working directory must be the toplevel project (where this README is located):
 ```
 Usage: ./scripts/run-h2load.sh <frontend ipaddr> <backend ipaddr> <frontend port> <frontend nocoloc port> <frontend workstealing port> <nb connections>
 ./scripts/run-h2load.sh FRONTEND_IP BACKEND_IP 8090 8091 8092 10
@@ -129,9 +129,9 @@ for the **-Dsteal** option, set it either to `false` or `true`
 
 ## notes: 
 
-- for the Post2 scenario, the max connections must not be too high, else many exceptions
-are throwns and the frontend looses it's backend connections. See below the #issue 1.
-using -Dsteps=5 seems fine, maybe you'll need to reduce it.
+- for the Post2 scenario, the max connections must not be too high, else the test will fail with many exceptions
+and the frontend is then disconnected from the backend. See below the #issue 1.
+using **-Dsteps=5** seems fine, maybe you'll need to reduce it.
 
 ## known issues
 
