@@ -259,7 +259,7 @@ at io.netty.channel.DefaultChannelPipeline.callHandlerRemoved0(DefaultChannelPip
 
 </details>
 
-Work Around: reduce number of http2 connections used by Gatling (use )
+Work Around: reduce number of http2 connections used by Gatling (use -Dsteps option which is used to configure the number of connections).
 
 ##### issue 2
 With normal (no work steal mode), for the Gatling/Post test, we can observe this exception in the frontend:
