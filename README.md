@@ -135,10 +135,11 @@ so there is no colocation in this case ...
 ## known issues
 
 ##### issue 1
-Wen using too much concurrent streams in Gatling (like 100), for the **Post2** scenario 
-we can get the following exceptions in the backend (in all modes, whether work stealing mode is used or not).
-(maybe a but in the scenario, I don't know for the moment).
+When Gatling opens too much connections, we can get the following exceptions when running the **Post2** scenario 
+This can happen in all modes, whether work stealing mode is used or not. Maybe a bug in the scenario, I don't know for 
+the moment.
 
+in the backend:
 <details>
   <summary>io.netty.handler.codec.http2.Http2Exception: Stream 774273 does not exist for inbound frame RST_STREAM, endOfStream = false</summary>
 14:57:52.480 [reactor-http-nio-10] WARN  i.n.channel.DefaultChannelPipeline - An exceptionCaught() event was fired, and it reached at the tail of the pipeline. It usually means the last handler in the pipeline did not handle the exception.
