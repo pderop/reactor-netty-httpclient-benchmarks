@@ -17,7 +17,7 @@ cd reactor-netty
 
 ## Build
 
-build the project with jdk21 (the gradle wrapper is not installed, you need to set it up using `gradlew wrapper`)
+build the project with jdk21 (the gradle wrapper is not installed, you need to set it up using `gradle wrapper`)
 
 ## benchmarks descriptions
 
