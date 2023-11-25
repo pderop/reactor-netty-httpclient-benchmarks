@@ -1,9 +1,9 @@
 # reactor-netty-httpclient-benchmarks
 
-Gatling benchmarks for Reactor Netty Http Client
+Various benchmarks for Reactor Netty Http Client
 
 ## Prerequisites:
-You need to first build the following projects and publish them to local M2 before building this project:
+First build the following projects and publish them into your local M2:
 
 ```
 git checkout -b workstealing-pool git@github.com:reactor/reactor-pool.git 
@@ -14,8 +14,6 @@ git checkout -b workstealing-pool git@github.com:reactor/reactor-netty.git
 cd reactor-netty
 ./gradlew publishToMavenLocal
 ```
-
-(for the moment, the "workstealing-pool is not yet created on the reactor-poo/reactor-netty projects)
 
 ## Build
 
@@ -32,8 +30,8 @@ The samples are made up of three jars (ideally to be installed on three differen
 Gatling -> frontend -> backend
 
 In Gatling, there are three scenarios: "Get", "Post", and "Post2"
-- Get: a small GET request is sent to the frontend, which forwards it to the backend
-- Post: same as Get, but with Post with a 1k json payload in both request and response
+- Get: a small HTTP/2 GET request is sent to the frontend, which forwards it to the backend
+- Post: same as HTTP/2 Get, but with POST with a 1k json payload in both request and response
 - Post2: a more complex scenario (the json payload is parsed by the frontend):
 
 ```mermaid
@@ -54,83 +52,86 @@ In addition to Gatling, there is a also a loader based on reactor netty HttpClie
 
 The benchmarks can be run in three mode:
 
-- normal mode: the Reactor Netty Http2 client is used by the frontend in order to forward requests to the backend
-- non-colocated mode: when Gatling begins injecting requests, there's a race condition. The first HTTP/2 connection 
-that receives potentially many multiplexed requests triggers the establishment of connections (because at this point the pool is empty). 
-These connections are then managed by the event loop of the first HTTP/2 connection that has received the initial requests.
-This setup results in all connections managed by the HTTP/2 connection pool being handled by a single event loop. 
-So, in this case, we can configure the Http2Client in the frontend with a custom event loop group without colocation support, 
-that seems to greatly improve performances:
+- normal mode: The frontend uses the Reactor Netty Http2 client in order to forward requests to the backend
+- non-colocated mode: the frontend http2 client is configured with a custom Event Loop Group with colocation disabled, like this:
 ```
     client = client.runOn(LoopResources.create("client-loops", 1, Runtime.getRuntime().availableProcessors(), true, false));
 ```
-- work stealing mode: the Http2Client streams acquisition will be handled by concurrent sub pools, each one being executed 
-by the HttpClient event loops.
+- work stealing mode: the frontend Http2Client uses the experimental new work stealing reactor pool, where streams acquisition 
+are handled by concurrent pools, each one being executed within their own event loop executor
+(there is one actual Http2Pool per HttpClient event loop) 
 
-To run the scenarios in normal mode:
+## Start the servers
+
+- start the backend (it will listen on 8080 port by default):
 ```
-java -Dsteal=false -Dbackend.host=BACKEND_IP  -jar frontend-1.0.0.jar
-java -jar backend-1.0.0.jar
-java -Dsteps=10 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Get Post
-java -Dsteps=7 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Post2
-java -Dsteal=false -Dscenario=get  -Dbackend.host=BACKEND_IP -cp frontend-1.0.0.jar org.example.ClientApp
-java -Dsteal=false -Dscenario=post -Dbackend.host=BACKEND_IP -cp frontend-1.0.0.jar org.example.ClientApp
+java -Dbackend.port=8080 -jar backend/build/libs/backend-1.0.0.jar
 ```
 
-To run the scenarios without colocation:
+- start a frontend server in normal mode on port 8090
 ```
-java -Dnocoloc=true -Dsteal=false -Dbackend.host=BACKEND_IP  -jar frontend-1.0.0.jar
-java -jar backend-1.0.0.jar
-java -Dsteps=10 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Get Post
-java -Dsteps=7 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Post2
-java -Dsteal=false -Dscenario=get  -Dbackend.host=BACKEND_IP -cp frontend-1.0.0.jar org.example.ClientApp
-java -Dsteal=false -Dscenario=post -Dbackend.host=BACKEND_IP -cp frontend-1.0.0.jar org.example.ClientApp
+java -Dfrontend.port=8090 -Dbackend.host=BACKEND_IP -jar frontend/build/libs/frontend-1.0.0.jar
 ```
 
-To run the scenarios with work stealing enabled:
-
+- start a frontend server in non-colocated mode on port 8091
 ```
-java -Dsteal=true -Dbackend.host=BACKEND_IP -jar frontend-1.0.0.jar
-java -jar backend-1.0.0.jar
-java -Dsteps=10 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Get Post
-java -Dsteps=7 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Post2
-java -Dsteal=true -Dbackend.host=BACKEND_IP -Dscenario=get -cp frontend-1.0.0.jar org.example.ClientApp
-java -Dsteal=true -Dbackend.host=BACKEND_IP -Dscenario=post -cp frontend-1.0.0.jar org.example.ClientApp
+java -Dfrontend.port=8091 -Dnocoloc=true -Dbackend.host=BACKEND_IP -jar frontend/build/libs/frontend-1.0.0.jar
 ```
 
-the `-Dsteps` in gatling specifies the number of http2 connections established to the frontend.
-For the "Post2" scenario, reduce the number of connections if exceptions are observed (see "issues" sections)
+- start a frontend server in work stealing mode mode on port 8092
+```
+java -Dfrontend.port=8092 -Dsteal=true -Dbackend.host=BACKEND_IP -jar frontend/build/libs/frontend-1.0.0.jar
+```
 
-## Current benchmarks results
+## Start Gatling
 
-### 11/24/2023:
+- to bench whatever frontend, use the -Dfrontend.port parameter to select the right frontend port to test:
+set FRONTEND_HOST and FRONTEND_PORT to either 8090, 8091, or 8092:
+```
+java -Dsteps=10 -Dfrontend.host=FRONTEND_HOST -Dfrontend.port=FRONTEND_PORT-jar gatling/build/libs/gatling-1.0.0-all.jar test-report-name Get Post
+```
+`-Dsteps` is used to configure the number of connections to establish. Do not use too much connections, it's HTTP/2 ! 
+For the **Post2** scenario, there is an issue, and you must not use more than 5 connections (reduce it if you see any failures):
+```
+java -Dsteps=5 -Dfrontend.host=FRONTEND_HOST -Dfrontend.port=FRONTEND_PORT -jar gatling/build/libs/gatling-1.0.0-all.jar test-report-name Get Post2
+```
 
-(on private home network, TODO: do the same on GCP):
+## Or start h2load
 
-|                          | Default mode (reqs/sec) | Colocation disabled (reqs/sec) | Steal (reqs/sec) |
-|--------------------------|-------------------------|--------------------------------|---------------|
-| **Gatling/Get/5 cnx**    | 45757.933               | 77667.383                      | 104146.533    |
-| **Gatling/Get/10 cnx**   | 45202.683               | 92010.433                      | 123405.867    |
-| **Gatling/Get/100 cnx**  | 45597.033               | 99688.733                      | 128446.017    |
-| **Gatling/Post 5 cnx**   | 32880.867               | 60109.85                       | 70396.7       |
-| **Gatling/Post 10 cnx**  | 32592.917               | 70077.833                      | 77083.56      |
-| **Gatling/Post 100 cnx** | 32655.55                | 72261.017                      | 79337.65      |
-| **Gatling/Post2 3 cnx**  | 16560.633               | 34169.733                      | 43625.9       |
-| **Gatling/Post2 5 cnx**  | 16854.233               | 36829.717                      | 49287.217     |
-| **Gatling/Post2 7 cnx**  | 16301.2                 | 41194.233                      | 54004.433     |
-| **HttpClient/get**       | 303924                  | 307604                         | 340056        |
-| **HttpClient/post**      | 174496                  | 178216                         | 199797        |
+alternatively, instead of using gatling, you can use **h2load**. First, install it:
 
-#### notes: 
+on linux:
+```
+sudo apt-get install nghttp2-client
+```
+
+on macos:
+```
+brew install nghttp2
+```
+
+now, run the scenario with the run-h2load.sh script (the current working directory must be to toplevel project (where this README is located):
+```
+Usage: ./scripts/run-h2load.sh <frontend ipaddr> <backend ipaddr> <frontend port> <frontend nocoloc port> <frontend workstealing port> <nb connections>
+./scripts/run-h2load.sh FRONTEND_IP BACKEND_IP 8090 8091 8092 10
+```
+In the above example, the script will test the three frontends (on port 8090, 8091, 8092), and will use 10 http2 connections during tests, with max-concurrent-streams=100.
+
+## Start the reactor netty HttpClient loader:
+
+there is a standalone reactor http client netty in the frontend, just invoke it like this:
+
+```
+java -cp frontend/build/libs/frontend-1.0.0.jar -Dsteal=true|false -Dbackend.host=BACKEND_IP -Dduration=5 -Dscenario=get|post org.example.ClientApp
+```
+for the **-Dscenario** option, set it either to `get` or `post`
+for the **-Dsteal** option, set it either to `false` or `true`
+
+## notes: 
 
 - for the Post2 scenario, the max connections must not be too high, else many exceptions
 are throwns and the frontend looses it's backend connections. See below the #issue 1.
-using -Dsteps=7 seems fine, maybe you'll need to reduce it.
-
-- both HttpClient/get, and HttpClient/post tests are getting the same kind of results whether default is used, or if
-colocation is disabled. It's because the HttpClient is used from the main() thread, not from a reactor netty event loop,
-so there is no colocation in this case ...
-
+using -Dsteps=5 seems fine, maybe you'll need to reduce it.
 
 ## known issues
 
