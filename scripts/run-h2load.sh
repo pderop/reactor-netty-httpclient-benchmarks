@@ -13,7 +13,6 @@ FRONTEND_STEAL_PORT=$5
 NB_CONN=$6
 
 # the frontend that is not configured with -Dnocoloc=true should have all the pool's connection colocated, let's force that setup.
-echo "Making sure uncolocated frontend will create it's connection using the same event loop"
 h2load -c1 -m100 -n100 https://$FRONTEND:$FRONTEND_PORT/get >/dev/null
 
 run() {
