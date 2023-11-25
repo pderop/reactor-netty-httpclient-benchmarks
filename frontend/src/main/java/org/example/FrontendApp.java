@@ -24,6 +24,14 @@ public class FrontendApp {
     }
 
     public static void main(String[] args) throws Exception {
+        if (Client.NO_HTTPCLIENT_COLOC) {
+            System.out.println("Disable HttpClient Colocation");
+        }
+
+        if (Client.ENABLE_WORKSTEALING) {
+            System.out.println("Enabling Http2Client Work Stealing");
+        }
+
         configure(HttpServer.create()
                 .host(FRONTEND_HOST)
                 .port(FRONTEND_PORT))

@@ -15,6 +15,8 @@ cd reactor-netty
 ./gradlew publishToMavenLocal
 ```
 
+(for the moment, the "workstealing-pool is not yet created on the reactor-poo/reactor-netty projects)
+
 ## Build
 
 build the project with jdk21 (the gradle wrapper is not installed, you need to set it up using `gradlew wrapper`)
@@ -31,7 +33,7 @@ Gatling -> frontend -> backend
 
 In Gatling, there are three scenarios: "Get", "Post", and "Post2"
 - Get: a small GET request is sent to the frontend, which forwards it to the backend
-- Post: Post request with a json payload (1k), response with a json payload (1k)
+- Post: same as Get, but with Post with a 1k json payload in both request and response
 - Post2: a more complex scenario (the json payload is parsed by the frontend):
 
 ```mermaid
@@ -48,14 +50,41 @@ sequenceDiagram
     Frontend-->>Gating: 200 OK (json 1K)
 ```
 
+In addition to Gatling, there is a also a loader based on reactor netty HttpClient, with two supported scenarions: "get" and "post".
+
+The benchmarks can be run in three mode:
+
+- normal mode: the Reactor Netty Http2 client is used by the frontend in order to forward requests to the backend
+- non-colocated mode: when Gatling begins injecting requests, there's a race condition. The first HTTP/2 connection 
+that receives potentially many multiplexed requests triggers the establishment of connections (because at this point the pool is empty). 
+These connections are then managed by the event loop of the first HTTP/2 connection that has received the initial requests.
+This setup results in all connections managed by the HTTP/2 connection pool being handled by a single event loop. 
+So, in this case, we can configure the Http2Client in the frontend with a custom event loop group without colocation support, 
+that seems to greatly improve performances:
+```
+    client = client.runOn(LoopResources.create("client-loops", 1, Runtime.getRuntime().availableProcessors(), true, false));
+```
+- work stealing mode: the Http2Client streams acquisition will be handled by concurrent sub pools, each one being executed 
+by the HttpClient event loops.
+
 To run the scenarios in normal mode:
 ```
 java -Dsteal=false -Dbackend.host=BACKEND_IP  -jar frontend-1.0.0.jar
 java -jar backend-1.0.0.jar
-java -Dh2.concurrency=100 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Get Post
-java -Dh2.concurrency=50 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Post2
-java -Dsteal=false -Dbackend.host=BACKEND_IP -Dscenario=get -cp frontend-1.0.0.jar org.example.ClientApp
-java -Dsteal=false -Dbackend.host=BACKEND_IP -Dscenario=post -cp frontend-1.0.0.jar org.example.ClientApp
+java -Dsteps=10 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Get Post
+java -Dsteps=7 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Post2
+java -Dsteal=false -Dscenario=get  -Dbackend.host=BACKEND_IP -cp frontend-1.0.0.jar org.example.ClientApp
+java -Dsteal=false -Dscenario=post -Dbackend.host=BACKEND_IP -cp frontend-1.0.0.jar org.example.ClientApp
+```
+
+To run the scenarios without colocation:
+```
+java -Dnocoloc=true -Dsteal=false -Dbackend.host=BACKEND_IP  -jar frontend-1.0.0.jar
+java -jar backend-1.0.0.jar
+java -Dsteps=10 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Get Post
+java -Dsteps=7 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Post2
+java -Dsteal=false -Dscenario=get  -Dbackend.host=BACKEND_IP -cp frontend-1.0.0.jar org.example.ClientApp
+java -Dsteal=false -Dscenario=post -Dbackend.host=BACKEND_IP -cp frontend-1.0.0.jar org.example.ClientApp
 ```
 
 To run the scenarios with work stealing enabled:
@@ -63,47 +92,46 @@ To run the scenarios with work stealing enabled:
 ```
 java -Dsteal=true -Dbackend.host=BACKEND_IP -jar frontend-1.0.0.jar
 java -jar backend-1.0.0.jar
-java -Dh2.concurrency=100 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Get Post
-java -Dh2.concurrency=50 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Post2
+java -Dsteps=10 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Get Post
+java -Dsteps=7 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Post2
 java -Dsteal=true -Dbackend.host=BACKEND_IP -Dscenario=get -cp frontend-1.0.0.jar org.example.ClientApp
 java -Dsteal=true -Dbackend.host=BACKEND_IP -Dscenario=post -cp frontend-1.0.0.jar org.example.ClientApp
 ```
 
+the `-Dsteps` in gatling specifies the number of http2 connections established to the frontend.
+For the "Post2" scenario, reduce the number of connections if exceptions are observed (see "issues" sections)
+
 ## Current benchmarks results
 
 ### 11/24/2023:
-(on GCP, using java21, with 16 core machines):
 
-|                     | No Work Stealing (reqs/sec) | Work Stealing (reqs/sec) |
-|---------------------|-----------------------------|--------------------------|
-| **Gatling/Get**     | 164536.942                  | 181588.642               |
-| **Gatling/Post**    | 104464.492                  | 105178.083               |
-| **Gatling/Post2**   | 61201.783                   | 76132.233                |
-| **HttpClient/get**  | 112526                      | 155430                   |
-| **HttpClient/post** | 120493                      | 154242                   |
+(on private home network, TODO: do the same on GCP):
 
-(on private home network, using java21, between two Macs M1):
-
-|                     | No Work Stealing (reqs/sec) | Work Stealing (reqs/sec) |
-|---------------------|-----------------------------|--------------------------|
-| **Gatling/Get**     |     105964.367              | 126893.75                |
-| **Gatling/Post**    |     71890.667               | 78402.8                  |
-| **Gatling/Post2**   |                             |                          |
-| **HttpClient/get**  |                             |                          |
-| **HttpClient/post** |                             |                          |
+|                          | Default mode (reqs/sec) | Colocation disabled (reqs/sec) | Steal (reqs/sec) |
+|--------------------------|-------------------------|--------------------------------|---------------|
+| **Gatling/Get/5 cnx**    | 45757.933               | 4660043                        | 6248792       |
+| **Gatling/Get/10 cnx**   | 45202.683               | 92010.433                      | 123405.867    |
+| **Gatling/Get/100 cnx**  | 45597.033               | 99688.733                      | 128446.017    |
+| **Gatling/Post 5 cnx**   | 32880.867               | 60109.85                       | 70396.7       |
+| **Gatling/Post 10 cnx**  | 32592.917               | 70077.833                      | 77083.56      |
+| **Gatling/Post 100 cnx** | 32655.55                | 72261.017                      | 79337.65      |
+| **Gatling/Post2 3 cnx**  | 16560.633               | 34169.733                      | 43625.9       |
+| **Gatling/Post2 5 cnx**  | 16854.233               | 36829.717                      | 49287.217     |
+| **Gatling/Post2 7 cnx**  | 16301.2                 | 41194.233                      | 54004.433     |
+| **HttpClient/get**       | 303924                  | 307604                         | 340056        |
+| **HttpClient/post**      | 174496                  | 178216                         | 199797        |
 
 #### notes: 
 
-- in normal mode, the HttpClient is configured like this in order to avoid colocation (else the frontend remains mono-eventloop !):
-```
-   client = client.runOn(LoopResources.create("client-loops", 1, Runtime.getRuntime().availableProcessors(), true, false));
-```
+- for the Post2 scenario, the max connections must not be too high, else many exceptions
+are throwns and the frontend looses it's backend connections. See below the #issue 1.
 
 ## known issues
 
 ##### issue 1
 Wen using too much concurrent streams in Gatling (like 100), for the **Post2** scenario 
-we can get the following exceptions in the backend (in all modes):
+we can get the following exceptions in the backend (in all modes, whether work stealing mode is used or not).
+(maybe a but in the scenario, I don't know for the moment).
 
 <details>
   <summary>io.netty.handler.codec.http2.Http2Exception: Stream 774273 does not exist for inbound frame RST_STREAM, endOfStream = false</summary>
@@ -154,7 +182,7 @@ io.netty.handler.codec.http2.Http2Exception: Stream 774273 does not exist for in
 	at java.base/java.lang.Thread.run(Thread.java:1583)
 </details>
 
-and this exception in the frontend:
+and many exceptions like the following in the frontend:
 
 <details>
   <summary>reactor.core.publisher.Operators - Error while discarding element from a Collection, continuing with next element</summary>
@@ -224,7 +252,7 @@ at io.netty.channel.DefaultChannelPipeline.callHandlerRemoved0(DefaultChannelPip
 
 </details>
 
-Work Around: run Gatling with **-Dh2.concurrency=50**. By default, the h2.concurrency is set to 100 in Gatling.
+Work Around: reduce number of http2 connections used by Gatling (use )
 
 ##### issue 2
 With normal (no work steal mode), for the Gatling/Post test, we can observe this exception in the frontend:

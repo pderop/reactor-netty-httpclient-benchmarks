@@ -16,6 +16,7 @@ import java.util.function.Function;
 
 public class Client {
     static final boolean ENABLE_WORKSTEALING = Boolean.getBoolean("steal");
+    static final boolean NO_HTTPCLIENT_COLOC = Boolean.getBoolean("nocoloc");
     static final String BACKEND_HOST = System.getProperty("backend.host", "127.0.0.1");
     static final int BACKEND_PORT = Integer.parseInt(System.getProperty("backend.port", "8080"));
     static final int H2CLIENT_MAX_CONNECTION = Integer.getInteger("h2client.maxconn", Runtime.getRuntime().availableProcessors());
@@ -35,8 +36,6 @@ public class Client {
                 .minConnections(1)
                 .maxConnections(H2CLIENT_MAX_CONNECTION)
                 .maxConcurrentStreams(H2CLIENT_MAX_STREAMS);
-
-        System.out.println("Work stealing mode=" + ENABLE_WORKSTEALING);
 
         if (ENABLE_WORKSTEALING) {
             h2AllocBuilder = h2AllocBuilder.enableWorkStealing();
@@ -59,7 +58,7 @@ public class Client {
                 .protocol(HttpProtocol.H2)
                 .secure(spec -> spec.sslContext(Http2SslContextSpec.forClient().configure(builder -> builder.trustManager(InsecureTrustManagerFactory.INSTANCE))))
                 .baseUrl("https://" + BACKEND_HOST + ":" + BACKEND_PORT);
-        if (!ENABLE_WORKSTEALING) {
+        if (NO_HTTPCLIENT_COLOC) {
             // It is crucial to let the http client use a dedicated event loop group without colocation mode, else the httpclient
             // will most likely be single threaded during gatling load tests.
             client = client.runOn(LoopResources.create("client-loops", 1, Runtime.getRuntime().availableProcessors(), true, false));
