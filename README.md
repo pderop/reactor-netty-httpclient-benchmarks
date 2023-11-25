@@ -66,7 +66,7 @@ java -jar backend-1.0.0.jar
 java -Dh2.concurrency=100 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Get Post
 java -Dh2.concurrency=50 -Dfrontend.host=FRONTEND_IP -jar gatling-1.0.0-all.jar test Post2
 java -Dsteal=true -Dbackend.host=BACKEND_IP -Dscenario=get -cp frontend-1.0.0.jar org.example.ClientApp
-java -Dsteal=true-Dbackend.host=BACKEND_IP -Dscenario=post -cp frontend-1.0.0.jar org.example.ClientApp
+java -Dsteal=true -Dbackend.host=BACKEND_IP -Dscenario=post -cp frontend-1.0.0.jar org.example.ClientApp
 ```
 
 ## Current benchmarks results
