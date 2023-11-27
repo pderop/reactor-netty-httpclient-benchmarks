@@ -6,11 +6,11 @@ Various benchmarks for Reactor Netty Http Client
 First build the following projects and publish them into your local M2:
 
 ```
-git checkout -b workstealing-pool git@github.com:reactor/reactor-pool.git 
+git checkout -b workstealing-pool git@github.com:pderop/reactor-pool.git
 cd reactor-pool
 ./gradlew publishToMavenLocal
 
-git checkout -b workstealing-pool git@github.com:reactor/reactor-netty.git 
+git checkout -b workstealing-pool git@github.com:pderop/reactor-netty.git
 cd reactor-netty
 ./gradlew publishToMavenLocal
 ```
