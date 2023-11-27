@@ -84,8 +84,12 @@ final class RouterFunctionConfig {
         return CLIENT
                 .get()
                 .uri("/checkPriviledge")
-                .responseSingle((r, buf) -> Mono.just(r.status()))
-                .map(status -> status.code() == 200);
+                .responseConnection((response, connection) -> connection.inbound()
+                            .receive()
+                            .aggregate()
+                            .asString()
+                            .map(body -> response.status().code() == 200))
+                .single();
     }
 
     static ByteBufFlux forwardToUpstream(String payload) {

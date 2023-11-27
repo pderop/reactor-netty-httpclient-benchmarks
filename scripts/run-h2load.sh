@@ -48,13 +48,8 @@ run "--- Frontend/post/$NB_CONN" $FRONTEND_PORT $NB_CONN post
 run "--- Frontend/post/$NB_CONN/nocoloc" $FRONTEND_NOCOLOC_PORT $NB_CONN post
 run "--- Frontend/post/$NB_CONN/workstealing" $FRONTEND_STEAL_PORT $NB_CONN post
 
-## Post2 scenario (connections number must be low, else the test is not working)
+## Post2 scenario
 
-nb_conn=$NB_CONN
-if [ $nb_conn -ge 4 ]; then
-  echo "Reducing connection number to 3 for post2 test."
-  nb_conn=3;
-fi
 run "---  Frontend/post2/$nb_conn" $FRONTEND_PORT $nb_conn post2
 run "---  Frontend/post2/$nb_conn/nocoloc" $FRONTEND_NOCOLOC_PORT $nb_conn post2
 run "---  Frontend/post2/$nb_conn/workstealing" $FRONTEND_STEAL_PORT $nb_conn post2
