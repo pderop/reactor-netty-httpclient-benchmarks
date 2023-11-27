@@ -49,7 +49,7 @@ final class RouterFunctionConfig {
                 .send((in, out) -> out.send(req.receive().aggregate().retain()))
                 .responseContent()
                 .retain()
-                .doOnNext(byteBuf -> BenchmarkHolder.benchmarkProvider.incrementProcessed()));
+                .doOnComplete(() -> BenchmarkHolder.benchmarkProvider.incrementProcessed()));
     }
 
     static Publisher<Void> post2(HttpServerRequest req, HttpServerResponse rsp) {
