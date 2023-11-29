@@ -50,9 +50,9 @@ run "--- Frontend/post/$NB_CONN/workstealing" $FRONTEND_STEAL_PORT $NB_CONN post
 
 ## Post2 scenario
 
-run "---  Frontend/post2/$nb_conn" $FRONTEND_PORT $nb_conn post2
-run "---  Frontend/post2/$nb_conn/nocoloc" $FRONTEND_NOCOLOC_PORT $nb_conn post2
-run "---  Frontend/post2/$nb_conn/workstealing" $FRONTEND_STEAL_PORT $nb_conn post2
+run "---  Frontend/post2/$nb_conn" $FRONTEND_PORT $NB_CONN post2
+run "---  Frontend/post2/$nb_conn/nocoloc" $FRONTEND_NOCOLOC_PORT $NB_CONN post2
+run "---  Frontend/post2/$nb_conn/workstealing" $FRONTEND_STEAL_PORT $NB_CONN post2
 
 echo
 echo "--- HttpClient/get"
