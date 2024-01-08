@@ -31,7 +31,8 @@ public class Post2 extends SimulationBase {
         } catch (
                 IOException e) {
             throw new RuntimeException(e);
-        } catch (Exception e) {
+        } catch (
+                Exception e) {
             throw new ExceptionInInitializerError(e);
         }
     }
@@ -41,21 +42,17 @@ public class Post2 extends SimulationBase {
                 .acceptHeader("application/json")
                 .acceptLanguageHeader("en-US,en;q=0.5")
                 .acceptEncodingHeader("gzip, deflate")
-                .userAgentHeader("Gatling");
+                .userAgentHeader("Gatling")
+                .enableHttp2();
 
         HttpRequestActionBuilder requestBuilder = http("post2")
                 .post("/post2")
-                .header("Content-Type", "application/json")
-                .body(StringBody(JSON));
-
-
-        httpProtocolBuilder = httpProtocolBuilder.enableHttp2();
-        requestBuilder = requestBuilder.resources(IntStream.range(0, H2_CONCURRENCY)
-                .mapToObj(i -> http("req" + (i + 1))
-                        .post("/post2")
-                        .header("Content-Type", "application/json")
-                        .body(StringBody(JSON)))
-                .collect(Collectors.toList()));
+                .resources(IntStream.range(0, H2_CONCURRENCY)
+                        .mapToObj(i -> http("req" + (i + 1))
+                                .post("/post2")
+                                .header("Content-Type", "application/json")
+                                .body(StringBody(JSON)))
+                        .collect(Collectors.toList()));
 
         setUp(httpProtocolBuilder, requestBuilder, "Post2 Scenario");
     }

@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.time.Duration;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 public class ClientApp {
@@ -28,6 +29,12 @@ public class ClientApp {
 
     static class BenchmarkHolder {
         final static BenchmarkProvider benchmarkProvider = new BenchmarkProvider().start();
+    }
+
+    final static RouterFunctionConfig.PiCalculator PI = new RouterFunctionConfig.PiCalculator();
+
+    final static double calculatePI() {
+        return PI.calculatePi(ThreadLocalRandom.current().nextInt(1000, 2000));
     }
 
     public static void main(String[] args) throws IOException {
@@ -91,6 +98,9 @@ public class ClientApp {
                 .aggregate()
                 .asString()
                 .doOnNext(s -> {
+                    if (calculatePI() < 0) {
+                        throw new RuntimeException("Negative PI number");
+                    }
                     if (doStatistics) {
                         BenchmarkHolder.benchmarkProvider.incrementProcessed();
                     }
@@ -114,6 +124,9 @@ public class ClientApp {
                 .aggregate()
                 .asString()
                 .doOnNext(s -> {
+                    if (calculatePI() < 0) {
+                        throw new RuntimeException("Negative PI number");
+                    }
                     if (doStatistics) {
                         BenchmarkHolder.benchmarkProvider.incrementProcessed();
                     }

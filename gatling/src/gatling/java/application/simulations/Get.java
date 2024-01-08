@@ -14,16 +14,15 @@ public class Get extends SimulationBase {
                 .acceptHeader("text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
                 .acceptLanguageHeader("en-US,en;q=0.5")
                 .acceptEncodingHeader("gzip, deflate")
-                .userAgentHeader("Gatling");
+                .userAgentHeader("Gatling")
+                .enableHttp2();
 
         HttpRequestActionBuilder requestBuilder = http("get")
-                .get("/get");
-
-        httpProtocolBuilder = httpProtocolBuilder.enableHttp2();
-        requestBuilder = requestBuilder.resources(IntStream.range(0, H2_CONCURRENCY)
-                .mapToObj(i -> http("req" + (i + 1))
-                        .get("/get"))
-                .collect(Collectors.toList()));
+                .get("/get")
+                .resources(IntStream.range(0, H2_CONCURRENCY)
+                        .mapToObj(i -> http("req" + (i + 1))
+                                .get("/get"))
+                        .collect(Collectors.toList()));
 
         setUp(httpProtocolBuilder, requestBuilder, "Get Scenario");
     }

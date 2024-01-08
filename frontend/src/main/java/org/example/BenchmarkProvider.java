@@ -27,7 +27,6 @@ public class BenchmarkProvider {
     private final AtomicInteger threadsPerSecond = new AtomicInteger();
     private final AtomicReference<Thread> lastThreadSeen = new AtomicReference<>();
     private static final String CLIENT_RESPONSE_TIME = HTTP_CLIENT_PREFIX + RESPONSE_TIME;
-    private static String POOL_NAME = "http";
 
     public BenchmarkProvider() {
         registry = new SimpleMeterRegistry();
@@ -75,20 +74,20 @@ public class BenchmarkProvider {
 
         int errPerSecond = currentErrors.getAndSet(0);
 
-        System.out.printf("req/sec=%-7d err/sec=%-7d mem(MB)=%-5d cpu(%%)=%-5d conc/sec=%-5.2s rspTime=%-5d actvStreams=%-5.0f pendingStreams=%-5.0f stealSteams=%-5.0f pendingCnx=%-5.0f actvCnx=%-5.0f idleCnx=%-5.0f totalCnx=%-5.0f\n",
+        System.out.printf("req/sec=%-7d cpu(%%)=%-5d conc/s=%-5.2s err/s=%-7d mem(MB)=%-5d rspTime=%-5d actvStreams=%-5.0f pendingStreams=%-5.0f stealSteams=%-5.0f pendingCnx=%-5.0f actvCnx=%-5.0f idleCnx=%-5.0f totalCnx=%-5.0f\n",
                 eventPerSecond,
-                errPerSecond,
-                memoryUsed,
                 (int) (osBean.getProcessCpuLoad() * 100),
                 threadsPerSecond.getAndSet(0),
+                errPerSecond,
+                memoryUsed,
                 getTimer(CLIENT_RESPONSE_TIME),
-                getGaugeValue(CONNECTION_PROVIDER_PREFIX + ACTIVE_STREAMS, "http2." + POOL_NAME),
-                getGaugeValue(CONNECTION_PROVIDER_PREFIX + PENDING_STREAMS, "http2." + POOL_NAME),
-                getGaugeValue(CONNECTION_PROVIDER_PREFIX + STEAL_STREAMS, "http2." + POOL_NAME),
-                getGaugeValue(CONNECTION_PROVIDER_PREFIX + PENDING_CONNECTIONS, POOL_NAME),
-                getGaugeValue(CONNECTION_PROVIDER_PREFIX + ACTIVE_CONNECTIONS, POOL_NAME),
-                getGaugeValue(CONNECTION_PROVIDER_PREFIX + IDLE_CONNECTIONS, POOL_NAME),
-                getGaugeValue(CONNECTION_PROVIDER_PREFIX + TOTAL_CONNECTIONS, POOL_NAME));
+                getGaugeValue(CONNECTION_PROVIDER_PREFIX + ACTIVE_STREAMS, "http2." + Client.POOL_NAME),
+                getGaugeValue(CONNECTION_PROVIDER_PREFIX + PENDING_STREAMS, "http2." + Client.POOL_NAME),
+                getGaugeValue(CONNECTION_PROVIDER_PREFIX + STEAL_STREAMS, "http2." + Client.POOL_NAME),
+                getGaugeValue(CONNECTION_PROVIDER_PREFIX + PENDING_CONNECTIONS, Client.POOL_NAME),
+                getGaugeValue(CONNECTION_PROVIDER_PREFIX + ACTIVE_CONNECTIONS, Client.POOL_NAME),
+                getGaugeValue(CONNECTION_PROVIDER_PREFIX + IDLE_CONNECTIONS, Client.POOL_NAME),
+                getGaugeValue(CONNECTION_PROVIDER_PREFIX + TOTAL_CONNECTIONS, Client.POOL_NAME));
     }
 
     public void incrementProcessed() {
